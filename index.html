@@ -1137,7 +1137,7 @@
                     </div>
                     <div class="form-group">
                         <label for="gender">Gender</label>
-                        <select id="gender" required>
+                        <select id="gender" required onchange="calculateIdealWeightLive()">
                             <option value="">Select Gender</option>
                             <option value="male">Male</option>
                             <option value="female">Female</option>
@@ -1146,7 +1146,7 @@
                     </div>
                     <div class="form-group">
                         <label for="height">Height (cm)</label>
-                        <input type="number" id="height" min="100" max="250" required>
+                        <input type="number" id="height" min="100" max="250" required oninput="calculateIdealWeightLive()">
                     </div>
                     <div class="form-group">
                         <label for="weight">Current Weight (kg)</label>
@@ -1173,6 +1173,32 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- Live Ideal Weight Display -->
+                <div id="liveIdealWeight" class="hidden" style="margin: 1.5rem 0;">
+                    <div style="background: linear-gradient(135deg, rgba(108, 99, 255, 0.1) 0%, rgba(0, 217, 255, 0.1) 100%); padding: 1.5rem; border-radius: 15px; border-left: 5px solid var(--secondary); box-shadow: 0 4px 20px var(--shadow);">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <span style="font-size: 2rem;">🎯</span>
+                            <h4 style="color: var(--text); margin: 0; font-size: 1.2rem;">Your Ideal Weight Range</h4>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+                                    <span style="font-size: 2.5rem; font-weight: 800; background: var(--gradient-secondary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="liveIdealMin">0</span>
+                                    <span style="font-size: 1.5rem; color: var(--text); opacity: 0.7;">-</span>
+                                    <span style="font-size: 2.5rem; font-weight: 800; background: var(--gradient-secondary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="liveIdealMax">0</span>
+                                    <span style="font-size: 1.2rem; color: var(--text); opacity: 0.6; margin-left: 0.5rem;">kg</span>
+                                </div>
+                                <p style="color: var(--text); opacity: 0.75; margin-top: 0.5rem; font-size: 0.9rem;">Based on healthy BMI range (18.5 - 24.9)</p>
+                            </div>
+                            <div style="flex: 1; min-width: 200px; background: var(--card-bg); padding: 1rem; border-radius: 10px;">
+                                <div style="font-size: 1rem; color: var(--text); opacity: 0.8; margin-bottom: 0.5rem;">Current Status:</div>
+                                <div id="liveWeightStatus" style="font-size: 1.1rem; font-weight: 700; color: var(--secondary);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Calculate & Get Recommendations</button>
             </form>
 
@@ -1184,8 +1210,8 @@
                     <p style="margin-top: 1rem;">Ideal Weight Range: <span id="idealWeight">0</span> kg</p>
                 </div>
                 <div id="recommendations" style="margin-top: 1.5rem;">
-                    <h3 style="color: var(--secondary); margin-bottom: 1rem;">Personalized Recommendations</h3>
-                    <p id="recommendationText" style="line-height: 1.8; color: #555;"></p>
+                    <h3 style="color: var(--text); margin-bottom: 1rem;">Personalized Recommendations</h3>
+                    <p id="recommendationText" style="line-height: 1.8; color: var(--text); opacity: 0.85;"></p>
                 </div>
             </div>
         </div>
@@ -1557,6 +1583,65 @@
 
         // Load theme immediately
         loadTheme();
+
+        // Live Ideal Weight Calculation
+        function calculateIdealWeightLive() {
+            const height = parseFloat(document.getElementById('height').value);
+            const gender = document.getElementById('gender').value;
+            const currentWeight = parseFloat(document.getElementById('weight').value);
+
+            // Only calculate if we have valid height and gender
+            if (!height || height < 100 || height > 250 || !gender) {
+                document.getElementById('liveIdealWeight').classList.add('hidden');
+                return;
+            }
+
+            const heightInMeters = height / 100;
+
+            // Calculate ideal weight range based on healthy BMI (18.5 - 24.9)
+            const minIdealWeight = (18.5 * heightInMeters * heightInMeters).toFixed(1);
+            const maxIdealWeight = (24.9 * heightInMeters * heightInMeters).toFixed(1);
+
+            // Display the results
+            document.getElementById('liveIdealMin').textContent = minIdealWeight;
+            document.getElementById('liveIdealMax').textContent = maxIdealWeight;
+
+            // Show weight status if current weight is entered
+            const statusDiv = document.getElementById('liveWeightStatus');
+            if (currentWeight && currentWeight > 0) {
+                const currentBMI = currentWeight / (heightInMeters * heightInMeters);
+                
+                let statusText = '';
+                let statusColor = '';
+                
+                if (currentBMI < 18.5) {
+                    statusText = '📉 Below ideal range - Consider gaining weight';
+                    statusColor = '#00D9FF';
+                } else if (currentBMI >= 18.5 && currentBMI <= 24.9) {
+                    statusText = '✅ Perfect! You\'re in the ideal range';
+                    statusColor = '#00E676';
+                } else if (currentBMI > 24.9 && currentBMI <= 29.9) {
+                    statusText = '⚠️ Above ideal range - Consider losing weight';
+                    statusColor = '#FFB800';
+                } else {
+                    statusText = '🔴 Well above ideal range - Weight loss recommended';
+                    statusColor = '#FF5252';
+                }
+                
+                statusDiv.innerHTML = statusText;
+                statusDiv.style.color = statusColor;
+            } else {
+                statusDiv.innerHTML = 'Enter your current weight to see your status';
+                statusDiv.style.color = 'var(--text)';
+                statusDiv.style.opacity = '0.6';
+            }
+
+            // Show the live weight display
+            document.getElementById('liveIdealWeight').classList.remove('hidden');
+        }
+
+        // Add event listener to weight field for live status updates
+        document.getElementById('weight').addEventListener('input', calculateIdealWeightLive);
 
         // Global variables
         let userData = {
